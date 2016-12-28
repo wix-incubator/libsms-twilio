@@ -29,6 +29,22 @@ class TwilioSmsGateway(requestFactory: HttpRequestFactory,
   }
 
   override def sendPlain(sender: Sender, destPhone: String, text: String): Try[String] = {
+    send(
+      sender = sender,
+      destPhone = destPhone,
+      text = text
+    )
+  }
+
+  override def sendUnicode(sender: Sender, destPhone: String, text: String): Try[String] = {
+    send(
+      sender = sender,
+      destPhone = destPhone,
+      text = text
+    )
+  }
+
+  private def send(sender: Sender, destPhone: String, text: String): Try[String] = {
     Try {
       val params = TwilioHelper.createRequestParams(
         sender = sender,
@@ -63,10 +79,6 @@ class TwilioSmsGateway(requestFactory: HttpRequestFactory,
       case Failure(e: IOException) => Failure(new CommunicationException(e.getMessage, e))
       case Failure(e) => Failure(new SmsErrorException(e.getMessage, e))
     }
-  }
-
-  override def sendUnicode(sender: Sender, destPhone: String, text: String): Try[String] = {
-    ???
   }
 
   private def extractAndCloseResponse(httpResponse: HttpResponse): String = {

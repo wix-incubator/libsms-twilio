@@ -29,7 +29,9 @@ class TwilioSmsGatewayIT extends SpecWithJUnit {
     val someSender = Sender(
       phone = Some("+12125554321")
     )
-    val someText = "some text"
+    val somePlainText = "some plain text"
+    val someUnicodeText = "some יוניקוד text"
+
     val someMessageId = "someMessageId"
 
     val twilio: SmsGateway = new TwilioSmsGateway(
@@ -47,15 +49,15 @@ class TwilioSmsGatewayIT extends SpecWithJUnit {
         credentials = someCredentials,
         sender = someSender,
         destPhone = someDestPhone,
-        text = someText
+        text = somePlainText
       ) returns(
-          msgId = someMessageId
+        msgId = someMessageId
       )
 
       twilio.sendPlain(
         sender = someSender,
         destPhone = someDestPhone,
-        text = someText
+        text = somePlainText
       ) must beASuccessfulTry(
         check = ===(someMessageId)
       )
@@ -69,7 +71,7 @@ class TwilioSmsGatewayIT extends SpecWithJUnit {
         credentials = someCredentials,
         sender = someSender,
         destPhone = someDestPhone,
-        text = someText
+        text = somePlainText
       ) failsWith(
         code = someCode,
         message = someMessage
@@ -78,7 +80,51 @@ class TwilioSmsGatewayIT extends SpecWithJUnit {
       twilio.sendPlain(
         sender = someSender,
         destPhone = someDestPhone,
-        text = someText
+        text = somePlainText
+      ) must beAFailedTry.like {
+        case e: SmsErrorException => e.message must (contain(someCode) and contain(someMessage))
+      }
+    }
+  }
+
+  "sendUnicode" should {
+    "successfully yield a message ID on valid request" in new Ctx {
+      driver.aSendMessageFor(
+        credentials = someCredentials,
+        sender = someSender,
+        destPhone = someDestPhone,
+        text = someUnicodeText
+      ) returns(
+        msgId = someMessageId
+      )
+
+      twilio.sendUnicode(
+        sender = someSender,
+        destPhone = someDestPhone,
+        text = someUnicodeText
+      ) must beASuccessfulTry(
+        check = ===(someMessageId)
+      )
+    }
+
+    "gracefully fail on error" in new Ctx {
+      val someCode = "some code"
+      val someMessage = "some message"
+
+      driver.aSendMessageFor(
+        credentials = someCredentials,
+        sender = someSender,
+        destPhone = someDestPhone,
+        text = someUnicodeText
+      ) failsWith(
+        code = someCode,
+        message = someMessage
+      )
+
+      twilio.sendUnicode(
+        sender = someSender,
+        destPhone = someDestPhone,
+        text = someUnicodeText
       ) must beAFailedTry.like {
         case e: SmsErrorException => e.message must (contain(someCode) and contain(someMessage))
       }
