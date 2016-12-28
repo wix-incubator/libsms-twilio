@@ -24,8 +24,6 @@ class TwilioSmsGateway(requestFactory: HttpRequestFactory,
                        credentials: Credentials) extends SmsGateway {
   private val responseParser = new SmsResponseParser
 
-  override def getId: String = TwilioSmsGateway.id
-
   private def createBasicAuthorization(user: String, password: String): String = {
     s"Basic ${Base64.encodeBase64String(s"$user:$password".getBytes("UTF-8"))}"
   }
@@ -67,6 +65,10 @@ class TwilioSmsGateway(requestFactory: HttpRequestFactory,
     }
   }
 
+  override def sendUnicode(sender: Sender, destPhone: String, text: String): Try[String] = {
+    ???
+  }
+
   private def extractAndCloseResponse(httpResponse: HttpResponse): String = {
     try {
       httpResponse.parseAsString()
@@ -74,8 +76,4 @@ class TwilioSmsGateway(requestFactory: HttpRequestFactory,
       httpResponse.ignore()
     }
   }
-}
-
-object TwilioSmsGateway {
-  val id = "com.twilio"
 }
