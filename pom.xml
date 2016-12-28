@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>libsms-twilio-all</artifactId>
+    <version>1.1.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+    <name>libsms Twilio aggregator</name>
+    <description>libsms module for Twilio</description>
+	
+
+    <parent>
+        <groupId>com.wix.sms</groupId>
+        <artifactId>libsms-twilio-parent</artifactId>
+        <version>1.1.0-SNAPSHOT</version>
+		<relativePath>libsms-twilio-parent</relativePath>
+    </parent>
+
+
+    <scm>
+        <url>https://github.com/wix/libsms-twilio</url>
+        <connection>scm:git:git://github.com/wix/libsms-twilio.git</connection>
+        <developerConnection>scm:git:git@github.com:wix/libsms-twilio.git</developerConnection>
+        <tag>HEAD</tag>
+    </scm>
+
+
+    <modules>
+        <module>libsms-twilio-parent</module>
+        <module>libsms-twilio</module>
+        <module>libsms-twilio-common</module>
+        <module>libsms-twilio-testkit</module>
+    </modules>
+</project>
