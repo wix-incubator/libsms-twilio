@@ -22,8 +22,6 @@ class TwilioSmsGateway(requestFactory: HttpRequestFactory,
                        readTimeout: Option[Duration] = None,
                        numberOfRetries: Int = 0,
                        credentials: Credentials) extends SmsGateway {
-  private val responseParser = new SmsResponseParser
-
   private def createBasicAuthorization(user: String, password: String): String = {
     s"Basic ${Base64.encodeBase64String(s"$user:$password".getBytes("UTF-8"))}"
   }
@@ -59,6 +57,7 @@ class TwilioSmsGateway(requestFactory: HttpRequestFactory,
       connectTimeout.foreach { duration => httpRequest.setConnectTimeout(duration.toMillis.toInt) }
       readTimeout.foreach { duration => httpRequest.setReadTimeout(duration.toMillis.toInt) }
       httpRequest.setNumberOfRetries(numberOfRetries)
+      httpRequest.setThrowExceptionOnExecuteError(false)
 
       httpRequest.getHeaders.setAuthorization(createBasicAuthorization(
         user = credentials.accountSid,
@@ -67,7 +66,7 @@ class TwilioSmsGateway(requestFactory: HttpRequestFactory,
 
       val httpResponse = httpRequest.execute()
       val responseJson = extractAndCloseResponse(httpResponse)
-      val response = responseParser.parse(responseJson)
+      val response = SmsResponseParser.parse(responseJson)
 
       response.sid match {
         case Some(sid) => sid

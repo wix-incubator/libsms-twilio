@@ -15,18 +15,17 @@ import scala.collection.mutable
 
 class TwilioDriver(port: Int) {
   private val probe = new EmbeddedHttpProbe(port, EmbeddedHttpProbe.NotFoundHandler)
-  private val smsResponseParser = new SmsResponseParser
 
-  def startProbe() {
+  def start(): Unit = {
     probe.doStart()
   }
 
-  def stopProbe() {
+  def stop(): Unit = {
     probe.doStop()
   }
 
-  def resetProbe() {
-    probe.handlers.clear()
+  def reset(): Unit = {
+    probe.reset()
   }
 
   def aSendMessageFor(credentials: Credentials, sender: Sender, destPhone: String, text: String): SendMessageCtx = {
@@ -44,26 +43,36 @@ class TwilioDriver(port: Int) {
       text = text
     )
 
-    def returns(msgId: String) = {
-      val response = new SmsResponse(
+    def returns(msgId: String): Unit = {
+      val response = SmsResponse(
         sid = Some(msgId)
       )
 
-      val responseJson = smsResponseParser.stringify(response)
-      returnsJson(responseJson)
+      val responseJson = SmsResponseParser.stringify(response)
+      returnsJson(StatusCodes.OK, responseJson)
     }
 
-    def failsWith(code: String, message: String) = {
-      val response = new SmsResponse(
+    def failsDueToBlacklist(): Unit = {
+      val response = SmsResponse(
+        code = Some("21610"),
+        message = Some("The message From/To pair violates a blacklist rule.")
+      )
+
+      val responseJson = SmsResponseParser.stringify(response)
+      returnsJson(StatusCodes.BadRequest, responseJson)
+    }
+
+    def failsWith(code: String, message: String): Unit = {
+      val response = SmsResponse(
         code = Some(code),
         message = Some(message)
       )
 
-      val responseJson = smsResponseParser.stringify(response)
-      returnsJson(responseJson)
+      val responseJson = SmsResponseParser.stringify(response)
+      returnsJson(StatusCodes.OK, responseJson)
     }
 
-    private def returnsJson(responseJson: String): Unit = {
+    private def returnsJson(statusCode: StatusCode, responseJson: String): Unit = {
       val path = s"/Accounts/${credentials.accountSid}/Messages.json"
       probe.handlers += {
         case HttpRequest(
@@ -73,7 +82,7 @@ class TwilioDriver(port: Int) {
         entity,
         _) if isStubbedRequestEntity(entity) && isStubbedHeaders(headers) =>
           HttpResponse(
-            status = StatusCodes.OK,
+            status = statusCode,
             entity = HttpEntity(ContentTypes.`application/json`, responseJson))
       }
     }

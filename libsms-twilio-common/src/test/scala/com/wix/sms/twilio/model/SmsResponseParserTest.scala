@@ -8,14 +8,12 @@ class SmsResponseParserTest extends SpecWithJUnit {
     val someSmsResponse = SmsResponse(
       sid = Some("some sid")
     )
-
-    val parser = new SmsResponseParser
   }
 
   "stringify and then parse" should {
     "yield an object similar to the original one" in new Ctx {
-      val json = parser.stringify(someSmsResponse)
-      parser.parse(json) must beEqualTo(someSmsResponse)
+      val json = SmsResponseParser.stringify(someSmsResponse)
+      SmsResponseParser.parse(json) must beEqualTo(someSmsResponse)
     }
   }
 }

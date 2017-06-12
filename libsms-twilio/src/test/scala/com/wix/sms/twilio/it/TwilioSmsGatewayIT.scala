@@ -13,7 +13,7 @@ class TwilioSmsGatewayIT extends SpecWithJUnit {
 
   val driver = new TwilioDriver(port = twilioPort)
   step {
-    driver.startProbe()
+    driver.start()
   }
 
   sequential
@@ -40,7 +40,7 @@ class TwilioSmsGatewayIT extends SpecWithJUnit {
       credentials = someCredentials
     )
 
-    driver.resetProbe()
+    driver.reset()
   }
 
   "sendPlain" should {
@@ -84,6 +84,23 @@ class TwilioSmsGatewayIT extends SpecWithJUnit {
       ) must beAFailedTry.like {
         case e: SmsErrorException => e.message must (contain(someCode) and contain(someMessage))
       }
+    }
+
+    "gracefully fail on blacklist" in new Ctx {
+      driver.aSendMessageFor(
+        credentials = someCredentials,
+        sender = someSender,
+        destPhone = someDestPhone,
+        text = somePlainText
+      ) failsDueToBlacklist()
+
+      twilio.sendPlain(
+        sender = someSender,
+        destPhone = someDestPhone,
+        text = somePlainText
+      ) must beAFailedTry(
+        check = beAnInstanceOf[SmsErrorException]
+      )
     }
   }
 
@@ -129,9 +146,26 @@ class TwilioSmsGatewayIT extends SpecWithJUnit {
         case e: SmsErrorException => e.message must (contain(someCode) and contain(someMessage))
       }
     }
+
+    "gracefully fail on blacklist" in new Ctx {
+      driver.aSendMessageFor(
+        credentials = someCredentials,
+        sender = someSender,
+        destPhone = someDestPhone,
+        text = somePlainText
+      ) failsDueToBlacklist()
+
+      twilio.sendUnicode(
+        sender = someSender,
+        destPhone = someDestPhone,
+        text = somePlainText
+      ) must beAFailedTry(
+        check = beAnInstanceOf[SmsErrorException]
+      )
+    }
   }
 
   step {
-    driver.stopProbe()
+    driver.stop()
   }
 }
