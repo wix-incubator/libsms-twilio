@@ -71,13 +71,13 @@ class TwilioSmsGateway(requestFactory: HttpRequestFactory,
 
       response.sid match {
         case Some(sid) => sid
-        case None => throw new SmsErrorException(s"code = ${response.code.orNull}, message = ${response.message.orNull}")
+        case None => throw SmsErrorException(s"code = ${response.code.orNull}, message = ${response.message.orNull}")
       }
     } match {
       case Success(sid) => Success(sid)
       case Failure(e: SmsException) => Failure(e)
-      case Failure(e: IOException) => Failure(new CommunicationException(e.getMessage, e))
-      case Failure(e) => Failure(new SmsErrorException(e.getMessage, e))
+      case Failure(e: IOException) => Failure(CommunicationException(e.getMessage, e))
+      case Failure(e) => Failure(SmsErrorException(e.getMessage, e))
     }
   }
 
