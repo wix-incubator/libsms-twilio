@@ -64,6 +64,7 @@
 
 
     <properties>
+        <com.wix.http-testkit.version>0.1.17</com.wix.http-testkit.version>
         <com.google.http.client.version>1.21.0</com.google.http.client.version>
         <org.json4js.version>3.4.2</org.json4js.version>
         <com.wix.sms.libsms.version>1.1.0-SNAPSHOT</com.wix.sms.libsms.version>

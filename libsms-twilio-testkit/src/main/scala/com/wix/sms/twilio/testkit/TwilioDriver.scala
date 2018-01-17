@@ -1,31 +1,43 @@
 package com.wix.sms.twilio.testkit
 
+import java.util.concurrent.atomic.AtomicReference
 import java.util.{List => JList}
 
+import akka.http.scaladsl.model._
 import com.google.api.client.http.UrlEncodedParser
 import com.google.api.client.util.Base64
-import com.wix.hoopoe.http.testkit.EmbeddedHttpProbe
+import com.wix.e2e.http.RequestHandler
+import com.wix.e2e.http.client.extractors.HttpMessageExtractors._
+import com.wix.e2e.http.server.WebServerFactory.aMockWebServerWith
 import com.wix.sms.model.Sender
 import com.wix.sms.twilio.model.{SmsResponse, SmsResponseParser}
 import com.wix.sms.twilio.{Credentials, TwilioHelper}
-import spray.http._
 
 import scala.collection.JavaConversions._
 import scala.collection.mutable
 
 class TwilioDriver(port: Int) {
-  private val probe = new EmbeddedHttpProbe(port, EmbeddedHttpProbe.NotFoundHandler)
+  private val delegatingHandler: RequestHandler = { case r: HttpRequest => handler.get().apply(r) }
+  private val notFoundHandlers: RequestHandler = { case _: HttpRequest => HttpResponse(status = StatusCodes.NotFound) }
+
+  private val handler = new AtomicReference(notFoundHandlers)
+
+  private val probe = aMockWebServerWith(delegatingHandler).onPort(port).build
 
   def start(): Unit = {
-    probe.doStart()
+    probe.start()
   }
 
   def stop(): Unit = {
-    probe.doStop()
+    probe.stop
   }
 
   def reset(): Unit = {
-    probe.reset()
+    handler.set(notFoundHandlers)
+  }
+
+  private def prependHandler(handle: RequestHandler) = {
+    handler.set(handle orElse handler.get())
   }
 
   def aSendMessageFor(credentials: Credentials, sender: Sender, destPhone: String, text: String): SendMessageCtx = {
@@ -74,21 +86,17 @@ class TwilioDriver(port: Int) {
 
     private def returnsJson(statusCode: StatusCode, responseJson: String): Unit = {
       val path = s"/Accounts/${credentials.accountSid}/Messages.json"
-      probe.handlers += {
-        case HttpRequest(
-        HttpMethods.POST,
-        Uri.Path(`path`),
-        headers,
-        entity,
-        _) if isStubbedRequestEntity(entity) && isStubbedHeaders(headers) =>
+      prependHandler({
+        case HttpRequest(HttpMethods.POST, Uri.Path(`path`), headers, entity, _) if isStubbedRequestEntity(entity) && isStubbedHeaders(headers) =>
           HttpResponse(
             status = statusCode,
-            entity = HttpEntity(ContentTypes.`application/json`, responseJson))
-      }
+            entity = HttpEntity(ContentTypes.`application/json`, responseJson)
+          )
+      })
     }
 
     private def isStubbedRequestEntity(entity: HttpEntity): Boolean = {
-      val params = urlDecode(entity.asString)
+      val params = urlDecode(entity.extractAsString)
 
       params == expectedParams
     }
@@ -97,7 +105,7 @@ class TwilioDriver(port: Int) {
       val expectedAuthorizationValue = s"Basic ${Base64.encodeBase64String(s"${credentials.accountSid}:${credentials.authToken}".getBytes("UTF-8"))}"
 
       headers.exists { header =>
-        header.name == HttpHeaders.Authorization.name &&
+        header.name == "Authorization" &&
           header.value == expectedAuthorizationValue
       }
     }
